@@ -4,13 +4,13 @@ Takes a CSV file containing line strings from an OpenDataKit Geotrace, which
 consist of a series of text coordinates, and returns a similar CSV file with 
 properly formatted Well-Known Text (WKT) linestrings (and points).
 
-*Arguments:
+**Arguments:**
 
   1) An input CSV file
   2) An integer specifying which column contains the geotrace 
      (1-based column count). 
 
-*Example usage:*
+**Example usage:**
 
     python3 lines_to_wkt.py infile.csv 9 outfile.csv
 
