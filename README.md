@@ -11,9 +11,10 @@ properly formatted Well-Known Text (WKT) linestrings (and points).
      (1-based column count). 
 
 *Example usage:*
+
     python3 lines_to_wkt.py infile.csv 9 outfile.csv
 
-    where the ninth column in the input file is the GeoTrace.
+where the ninth column in the input file is the GeoTrace.
 
 This script expects the default GeoTrace format from an ODK CSV export from
 Kobo Toolbox, which consists of a series of node coordinates separated by 
