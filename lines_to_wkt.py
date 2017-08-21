@@ -53,8 +53,8 @@ def main(infile, geometry_column):
                 outrow = row
                 outrow[geometry_col] = WKT_linestring_from_nodes(node_string)
                 writer.writerow(outrow)
-        print "created output file at:"
-        print outfile
+        print("created output file at:")
+        print(outfile)
         
 
 def WKT_linestring_from_nodes(node_string):
@@ -85,11 +85,11 @@ def WKT_linestring_from_nodes(node_string):
 
 def create_outfile(infile, extension):
     try:
-	infile_name = infile.split('.')[0]
-	infile_extension = infile.split('.')[-1]
+        infile_name = infile.split('.')[0]
+        infile_extension = infile.split('.')[-1]
     except:
-	print ("check input file")
-	sys.exit()
+        print("check input file")
+        sys.exit()
     outfile = infile_name + extension
     return outfile
 
