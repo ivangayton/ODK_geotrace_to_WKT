@@ -12,7 +12,7 @@ properly formatted Well-Known Text (WKT) linestrings (and points).
 
 **Example usage:**
 
-    python3 lines_to_wkt.py infile.csv 9 outfile.csv
+    python lines_to_wkt.py infile.csv 9 outfile.csv
 
 where the ninth column in the input file is the GeoTrace.
 
