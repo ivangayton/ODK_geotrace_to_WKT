@@ -75,6 +75,8 @@ def WKT_linestring_from_nodes(node_string):
     # Create the WKT string with WKT type and lon, lat in order
     coord_pair_list = []
     for node in nodes:
+        # strip leading space from nodes string (some phones do this)
+        if node.startswith(" "): node = node[1:]
         coords = node.split(' ')
         if(len(coords) >=2):
             coord_pair = coords[1] + ' ' + coords[0] + ', '
