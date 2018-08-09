@@ -49,10 +49,7 @@ def main(model, indir, outfile):
                     
 
 if __name__ == "__main__":
-    model = ('/home/ivan/Documents/01 HOT/01 Ramani Huria/Data Collection/'
-             'GWPL_Trash/GWPL_Client_Tagging_V2.csv')
-    indir = ('/home/ivan/Documents/01 HOT/01 Ramani Huria/Data Collection/'
-             'GWPL_Trash/odk/instances')
-    outfile = ('/home/ivan/Documents/01 HOT/01 Ramani Huria/Data Collection/'
-             'GWPL_Trash/GWPL_Client_Tagging_V2_RESULTS.csv')
+    model = sys.argv[1]
+    indir = sys.argv[2]
+    outfile = sys.argv[3]
     main(model, indir, outfile)
