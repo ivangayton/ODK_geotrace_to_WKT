@@ -39,10 +39,10 @@ def main(infile, geometry_column):
     outfile = create_outfile(infile, "_results.csv")
 
     with open(infile) as line_data:
-        linereader = csv.reader(line_data, delimiter = ';')
+        linereader = csv.reader(line_data, delimiter = ',')
         with open(outfile, 'w') as out_file:
             # Write the original CSV header directly to the outfile
-            writer = csv.writer(out_file, delimiter = ';')
+            writer = csv.writer(out_file, delimiter = ',')
             header = next(linereader)
             writer.writerow(header)
 
