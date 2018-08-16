@@ -39,7 +39,7 @@ def main(infile, geometry_column):
     outfile = create_outfile(infile, "_results.csv")
 
     with open(infile) as line_data:
-        linereader = csv.reader(line_data, delimiter = ',')
+        linereader = csv.reader(line_data, delimiter = ';')
         with open(outfile, 'w') as out_file:
             # Write the original CSV header directly to the outfile
             writer = csv.writer(out_file, delimiter = ',')
@@ -47,7 +47,11 @@ def main(infile, geometry_column):
             writer.writerow(header)
 
             # Extract the line string from the appropriate column
+            rownum = 1
             for row in linereader:
+                #print(rownum)
+                #print(row[31])
+                rownum += 1
                 geometry_col = int(geometry_column)-1
                 node_string = ''.join(row[geometry_col])
                 outrow = row
