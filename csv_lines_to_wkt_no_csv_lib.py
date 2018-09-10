@@ -4,6 +4,10 @@ Takes a CSV file containing line strings from an OpenDataKit Geotrace, which
 consist of a series of text coordinates, and returns a similar CSV file with 
 properly formatted Well-Known Text (WKT) linestrings (and points).
 
+This script deliberately avoids the use of the Python csv library, as that library
+imposes a field size limit which is often exceeded by OpenDataKit GeoTraces.
+That's why there's a bunch of awkward regex and string parsing going on here.
+
 Arguments:
 
   1) An input CSV file
@@ -36,38 +40,37 @@ import sys
 import re
 
 def main(infile, geometry_column):
-    regex = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
+    regex = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''') # Stack Overflow
     outfile = create_outfile(infile, "_results.csv")
 
     with open(infile) as line_data:
-        #linereader = csv.reader(line_data, delimiter = ';')
         with open(outfile, 'w') as out_file:
             header = next(line_data)
             out_file.writelines(header)
-            # Write the original CSV header directly to the outfile
-            #writer = csv.writer(out_file, delimiter = ',')
-            #header = next(linereader)
-            #writer.writerow(header)
 
             # Extract the line string from the appropriate column
             rownum = 1
             for line in line_data:
-                quotedrow = regex.split(line)[1::2]
                 print(rownum)
-                row = []
-                for item in quotedrow:
-                    row.append(item.strip('\"'))
                 rownum += 1
-                geometry_col = int(geometry_column)-1
-                node_string = ''.join(row[geometry_col].strip('\"'))
-                row[geometry_col] = WKT_linestring_from_nodes(node_string)
-                outrow = []
-                for item in row:
-                    outrow.append('\"{}\";'.format(item))
-                outrow[len(outrow)-1] = outrow[len(outrow)-1].strip(';')
-                outrow[0] = outrow[0][1:]
-                out_file.writelines(outrow)
-        print("created output file at:")
+                try:
+                    quotedrow = regex.split(line)[1::2]
+                    row = []
+                    for item in quotedrow:
+                        row.append(item.strip('\"'))
+                    geometry_col = int(geometry_column)-1
+                    node_string = ''.join(row[geometry_col].strip('\"'))
+                    row[geometry_col] = WKT_linestring_from_nodes(node_string)
+                    outrow = []
+                    for item in row:
+                        outrow.append('\"{}\";'.format(item))
+                    outrow[len(outrow)-1] = outrow[len(outrow)-1].strip(';')
+                    outrow[0] = outrow[0][1:]
+                    out_file.writelines(outrow)
+                except Exception as e:
+                    print('Line {} had some kind of problem:'.format(rownum))
+                    print(e)
+            print("created output file at:")
         print(outfile)
         
 
