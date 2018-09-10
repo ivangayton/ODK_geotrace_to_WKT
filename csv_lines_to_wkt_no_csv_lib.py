@@ -40,6 +40,9 @@ import sys
 import re
 
 def main(infile, geometry_column):
+
+    # Regex to split lines on semicolons without csv library
+    #TODO: Regex will NOT work on empty fields (i.e. ;;). Global replace ;; -> ;"";
     regex = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''') # Stack Overflow
     outfile = create_outfile(infile, "_results.csv")
 
@@ -51,10 +54,11 @@ def main(infile, geometry_column):
             # Extract the line string from the appropriate column
             rownum = 1
             for line in line_data:
+                #TODO: find newlines within quotes and append the rest of the line
                 print(rownum)
                 rownum += 1
                 try:
-                    quotedrow = regex.split(line)[1::2]
+                    quotedrow = regex.split(line)[1::2] # every second line
                     row = []
                     for item in quotedrow:
                         row.append(item.strip('\"'))
