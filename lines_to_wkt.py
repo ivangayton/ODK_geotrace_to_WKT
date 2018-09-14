@@ -37,6 +37,7 @@ import csv
 
 def main(infile, geometry_column):
     outfile = create_outfile(infile, "_results.csv")
+    csv.field_size_limit(100000000)  # Avoid problems with long linestrings
 
     with open(infile) as line_data:
         linereader = csv.reader(line_data, delimiter = ';')
