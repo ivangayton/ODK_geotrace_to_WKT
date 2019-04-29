@@ -36,11 +36,11 @@ import sys
 import csv
 import argparse
 
-def main(infile, column = None, delimiter = ',', column_name = 'drain_line'):
+def main(infile, column = None, delimiter = ",", column_name = 'drain_line'):
     """Iterates through the input CSV and writes the output CSV with converted
     linestrings.
     """
-    print('\n\ninfile = {}\ndelimiter = {}\ncolumn_name = {}\n\n'.format(infile, delimiter, column_name))
+    print('\n\ninfile = {}\ncolumn = {}\ndelimiter = {}\ncolumn_name = {}\n\n'.format(infile, column, delimiter, column_name))
     outfile = '{}_{}.csv'.format(infile, '_results')
     csv.field_size_limit(100000000)  # Avoid problems with long linestrings
 
@@ -51,12 +51,12 @@ def main(infile, column = None, delimiter = ',', column_name = 'drain_line'):
             writer = csv.writer(out_file, delimiter = ',')
             header = next(linereader)
             print('checking column name with {}'.format(column_name))
-            column = header.index(column_name)
+            columnindex = column - 1 if column else header.index(column_name)
             writer.writerow(header)
 
             # Extract the line string from the appropriate column
             for row in linereader:
-                geometry_col = int(geometry_column)-1
+                geometry_col = int(columnindex)
                 node_string = ''.join(row[geometry_col])
                 outrow = row
                 outrow[geometry_col] = WKT_linestring_from_nodes(node_string)
@@ -99,10 +99,10 @@ if __name__ == "__main__":
     p.add_argument('infile', help = "Input CSV file")
     p.add_argument('-c', '--column', help =
                    'Column containing the linestrings to be converted to WKT')
-    p.add_argument('-cn', '--column_name', help =
+    p.add_argument('-cn', '--column_name', default = 'drain_line', help =
                    'The header of the column containing the linestrings'
                    ' to be converted to WKT')
-    p.add_argument('-d', '--delimiter', help =
+    p.add_argument('-d', '--delimiter', default = ',', help =
                    'Token delimiting one value from the next, usually , or ;')
     args = p.parse_args()
 
