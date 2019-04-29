@@ -29,30 +29,33 @@ In a future version I may allow additional column number arguments to convert
 multiple traces in the same file (in case someone collects multiple lines in 
 the same survey).
 """
-__version__ = '2017-08-15'
+__version__ = '2019-04-29'
 
 import os
 import sys
 import csv
+import argparse
 
-def main(infile, geometry_column):
-    outfile = create_outfile(infile, "_results.csv")
+def main(infile, column = None, delimiter = ',', column_name = 'drain_line'):
+    """Iterates through the input CSV and writes the output CSV with converted
+    linestrings.
+    """
+    print('\n\ninfile = {}\ndelimiter = {}\ncolumn_name = {}\n\n'.format(infile, delimiter, column_name))
+    outfile = '{}_{}.csv'.format(infile, '_results')
     csv.field_size_limit(100000000)  # Avoid problems with long linestrings
 
     with open(infile) as line_data:
-        linereader = csv.reader(line_data, delimiter = ';')
+        linereader = csv.reader(line_data, delimiter = delimiter)
         with open(outfile, 'w') as out_file:
             # Write the original CSV header directly to the outfile
             writer = csv.writer(out_file, delimiter = ',')
             header = next(linereader)
+            print('checking column name with {}'.format(column_name))
+            column = header.index(column_name)
             writer.writerow(header)
 
             # Extract the line string from the appropriate column
-            rownum = 1
             for row in linereader:
-                #print(rownum)
-                #print(row[31])
-                rownum += 1
                 geometry_col = int(geometry_column)-1
                 node_string = ''.join(row[geometry_col])
                 outrow = row
@@ -74,15 +77,13 @@ def WKT_linestring_from_nodes(node_string):
         return None
 
     WKT_type = "LINESTRING"
-    if (len(nodes) == 2):
+    if (len(nodes) == 1):
         WKT_type = "POINT"
 
     # Create the WKT string with WKT type and lon, lat in order
     coord_pair_list = []
     for node in nodes:
-        # strip leading space from nodes string (some phones do this)
-        if node.startswith(" "): node = node[1:]
-        coords = node.split(' ')
+        coords = node.strip().split(' ')
         if(len(coords) >=2):
             coord_pair = coords[1] + ' ' + coords[0] + ', '
             coord_pair_list.append(coord_pair)
@@ -90,16 +91,21 @@ def WKT_linestring_from_nodes(node_string):
     linestring = WKT_type + '(' + line_coord_string + ')'
     return linestring
 
-def create_outfile(infile, extension):
-    try:
-        infile_name = infile.split('.')[0]
-        infile_extension = infile.split('.')[-1]
-    except:
-        print("check input file")
-        sys.exit()
-    outfile = infile_name + extension
-    return outfile
-
 if __name__ == "__main__":
-    
-    main( sys.argv[1], sys.argv[2])
+
+    arguments = []
+    p = argparse.ArgumentParser()
+
+    p.add_argument('infile', help = "Input CSV file")
+    p.add_argument('-c', '--column', help =
+                   'Column containing the linestrings to be converted to WKT')
+    p.add_argument('-cn', '--column_name', help =
+                   'The header of the column containing the linestrings'
+                   ' to be converted to WKT')
+    p.add_argument('-d', '--delimiter', help =
+                   'Token delimiting one value from the next, usually , or ;')
+    args = p.parse_args()
+
+    print('\n\n{}\n\n'.format(args))
+
+    main(args.infile, args.column, args.delimiter, args.column_name)
