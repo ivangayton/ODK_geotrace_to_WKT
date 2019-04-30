@@ -4,17 +4,6 @@ Takes a CSV file containing line strings from an OpenDataKit Geotrace, which
 consist of a series of text coordinates, and returns a similar CSV file with 
 properly formatted Well-Known Text (WKT) linestrings (and points).
 
-Arguments:
-
-  1) An input CSV file
-  2) An integer specifying which column contains the geotrace 
-     (1-based column count). 
-
-Example usage:
-    python3 lines_to_wkt.py infile.csv 9 outfile.csv
-
-    where the ninth column in the input file is the GeoTrace.
-
 This script expects the default GeoTrace format from an ODK CSV export from
 Kobo Toolbox, which consists of a series of node coordinates separated by 
 semicolons. Each node seems to consist of a latitude, longitude, and two zeros, 
@@ -36,19 +25,22 @@ import sys
 import csv
 import argparse
 
-def main(infile, column = None, delimiter = ",", column_name = 'drain_line'):
+def main(infile, column = None, delimiter = ",",
+         column_name = 'drain_line', output = None):
     """Iterates through the input CSV and writes the output CSV with converted
     linestrings.
     """
-    print('\n\ninfile = {}\ncolumn = {}\ndelimiter = {}\ncolumn_name = {}\n\n'.format(infile, column, delimiter, column_name))
-    outfile = '{}_{}.csv'.format(infile, '_results')
-    csv.field_size_limit(100000000)  # Avoid problems with long linestrings
+
+    of = output if output else '{}_{}.csv'.format(infile, '_results')
+
+    # Avoid choking the CSV library with a long linestring
+    csv.field_size_limit(100000000)  
 
     with open(infile) as line_data:
         linereader = csv.reader(line_data, delimiter = delimiter)
-        with open(outfile, 'w') as out_file:
+        with open(of, 'w') as outfile:
             # Write the original CSV header directly to the outfile
-            writer = csv.writer(out_file, delimiter = ',')
+            writer = csv.writer(outfile, delimiter = ',')
             header = next(linereader)
             print('checking column name with {}'.format(column_name))
             columnindex = column - 1 if column else header.index(column_name)
@@ -62,7 +54,7 @@ def main(infile, column = None, delimiter = ",", column_name = 'drain_line'):
                 outrow[geometry_col] = WKT_linestring_from_nodes(node_string)
                 writer.writerow(outrow)
         print("created output file at:")
-        print(outfile)
+        print(of)
         
 
 def WKT_linestring_from_nodes(node_string):
@@ -104,8 +96,8 @@ if __name__ == "__main__":
                    ' to be converted to WKT')
     p.add_argument('-d', '--delimiter', default = ',', help =
                    'Token delimiting one value from the next, usually , or ;')
+    p.add_argument('-o', '--output', help = 'Output file path')
     args = p.parse_args()
 
-    print('\n\n{}\n\n'.format(args))
-
-    main(args.infile, args.column, args.delimiter, args.column_name)
+    main(args.infile, args.column, args.delimiter,
+         args.column_name, args.output)
