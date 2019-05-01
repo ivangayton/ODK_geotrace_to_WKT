@@ -38,13 +38,13 @@ def main(infile, column = None, delimiter = ",",
         with open(of, 'w') as outfile:
             writer = csv.writer(outfile, delimiter = delimiter)
             header = next(reader)
-            cindex = int(column) - 1 if column else header.index(column_name)
+            colindex = int(column) - 1 if column else header.index(column_name)
             writer.writerow(header)
 
             for row in reader:
-                node_string = ''.join(row[cindex])
+                node_string = ''.join(row[colindex])
                 outrow = row
-                outrow[cindex] = WKT_linestring_from_nodes(node_string)
+                outrow[colindex] = WKT_linestring_from_nodes(node_string)
                 writer.writerow(outrow)
         print('created output file at: \n{}\n'.format(of))
         
@@ -60,7 +60,7 @@ def WKT_linestring_from_nodes(node_string):
         coord_pair_list = []
         for node in nodes:
             coords = node.strip().split()
-            if(len(coords) >=2):
+            if(len(coords) >=2):   # can be >2 incl elev & precision values
                 # Reverse coords; Lon first, then Lat (as per WKT spec)
                 coord_pair = '{} {}'.format(coords[1], coords[0])
                 coord_pair_list.append(coord_pair)
