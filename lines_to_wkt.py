@@ -27,62 +27,49 @@ import argparse
 
 def main(infile, column = None, delimiter = ",",
          column_name = 'drain_line', output = None):
-    """Iterates through the input CSV and writes the output CSV with converted
-    linestrings.
-    """
-
-    of = output if output else '{}_{}.csv'.format(infile, '_results')
+    """Iterates through a CSV and writes a CSV with converted linestrings."""
 
     # Avoid choking the CSV library with a long linestring
     csv.field_size_limit(100000000)  
 
     with open(infile) as line_data:
-        linereader = csv.reader(line_data, delimiter = delimiter)
+        reader = csv.reader(line_data, delimiter = delimiter)
+        of = output if output else '{}_{}.csv'.format(infile, '_results')
         with open(of, 'w') as outfile:
-            # Write the original CSV header directly to the outfile
-            writer = csv.writer(outfile, delimiter = ',')
-            header = next(linereader)
-            print('checking column name with {}'.format(column_name))
-            columnindex = column - 1 if column else header.index(column_name)
+            writer = csv.writer(outfile, delimiter = delimiter)
+            header = next(reader)
+            cindex = int(column) - 1 if column else header.index(column_name)
             writer.writerow(header)
 
-            # Extract the line string from the appropriate column
-            for row in linereader:
-                geometry_col = int(columnindex)
-                node_string = ''.join(row[geometry_col])
+            for row in reader:
+                node_string = ''.join(row[cindex])
                 outrow = row
-                outrow[geometry_col] = WKT_linestring_from_nodes(node_string)
+                outrow[cindex] = WKT_linestring_from_nodes(node_string)
                 writer.writerow(outrow)
-        print("created output file at:")
-        print(of)
+        print('created output file at: \n{}\n'.format(of))
         
-
 def WKT_linestring_from_nodes(node_string):
     """Takes a string of arbitrarily long strings separated by semicolons 
     where the first two items in the string are expected to be lat and long.
     Returns a string containing those coordinates as a Well-Known Text
-    linestring (with long and lat in that order, therefore x,y).
+    linestring (with long first and lat second, therefore x,y).
     """
     nodes = node_string.split(';')
-    # Return None if the input contains no nodes
-    if (len(nodes) <= 1):
+    if nodes:
+        WKT_type = "LINESTRING" if len(nodes) > 1 else "POINT"
+        coord_pair_list = []
+        for node in nodes:
+            coords = node.strip().split()
+            if(len(coords) >=2):
+                # Reverse coords; Lon first, then Lat (as per WKT spec)
+                coord_pair = '{} {}'.format(coords[1], coords[0])
+                coord_pair_list.append(coord_pair)
+        line_coord_string = ', '.join(coord_pair_list)
+        linestring = '{}({})'.format(WKT_type, line_coord_string)
+        return linestring
+    else:
         return None
-
-    WKT_type = "LINESTRING"
-    if (len(nodes) == 1):
-        WKT_type = "POINT"
-
-    # Create the WKT string with WKT type and lon, lat in order
-    coord_pair_list = []
-    for node in nodes:
-        coords = node.strip().split(' ')
-        if(len(coords) >=2):
-            coord_pair = coords[1] + ' ' + coords[0] + ', '
-            coord_pair_list.append(coord_pair)
-    line_coord_string = ''.join(coord_pair_list)
-    linestring = WKT_type + '(' + line_coord_string + ')'
-    return linestring
-
+    
 if __name__ == "__main__":
 
     arguments = []
