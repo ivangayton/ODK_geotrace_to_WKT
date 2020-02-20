@@ -33,27 +33,27 @@ def main(infile, column = None, delimiter = ';',
         reader = csv.reader(line_data, delimiter = ';')
         data = list(reader)
         of = output if output else '{}_{}.csv'.format(infile, '_3D_points')
+        colindex = int(column) - 1 if column else header.index(column_name)
         with open(of, 'w') as outfile:
             writer = csv.writer(outfile, delimiter = ';')
             header = data.pop(0)
-            #add the coordinates including elevation and precision to header
-            header.extend(['lat', 'lon', 'elevation', 'precision'])
-            colindex = int(column) - 1 if column else header.index(column_name)
-            #header.pop(colindex)
-            header = ['lat', 'lon', 'elevation', 'precision', 'id', 'name']
-            writer.writerow(header)
+            newheader = header[:colindex]
+            newheader.extend(header[colindex + 1:])
+            newheader.extend(['lat', 'lon', 'elevation', 'precision'])
+
+            writer.writerow(newheader)
 
             for row in data:
-                poppedrow = row
-                node_string = poppedrow.pop(colindex)
+                node_string = row[colindex]
                 nodes = node_string.split(';')
                 for node in nodes:
                     pointcoords = xyz_from_node(node)
                     if(pointcoords):
-                        outrow = pointcoords.extend([row[8], row[9]])
-                        
+                        outrow = row[:colindex]
+                        outrow.extend(row[colindex + 1:])
+                        outrow.extend(pointcoords)
                         #import pdb;pdb.set_trace()
-                        writer.writerow(pointcoords)
+                        writer.writerow(outrow)
         
         print('created output file at: \n{}\n'.format(of))
         
