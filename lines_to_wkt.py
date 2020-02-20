@@ -25,27 +25,44 @@ import sys
 import csv
 import argparse
 
-def main(infile, column = None, delimiter = ",",
+def main(infile, column = None, delimiter = ';',
          column_name = 'drain_line', output = None):
     """Iterates through a CSV and writes a CSV with converted linestrings."""
 
     # Avoid choking the CSV library with a long linestring
-    csv.field_size_limit(100000000)  
+    csv.field_size_limit(100000000)
+
+    print(delimiter)
 
     with open(infile) as line_data:
-        reader = csv.reader(line_data, delimiter = delimiter)
+        reader = csv.reader(line_data, delimiter = ';')
+        data = list(reader)
         of = output if output else '{}_{}.csv'.format(infile, '_results')
         with open(of, 'w') as outfile:
             writer = csv.writer(outfile, delimiter = delimiter)
-            header = next(reader)
+            header = data.pop(0)
+            #add the elevation and precision to header
+            header += ['elevation', 'precision']
+            print(header)
+            print(len(header))
             colindex = int(column) - 1 if column else header.index(column_name)
             writer.writerow(header)
 
-            for row in reader:
+            for row in data:
+                print(len(row))
+                #try:
+                #print(row)
+                #import pdb;pdb.set_trace()
                 node_string = ''.join(row[colindex])
                 outrow = row
-                outrow[colindex] = WKT_linestring_from_nodes(node_string)
+                # linestring, elevation, precision = WKT_linestring_from_nodes(node_string)
+                lon, lat, elev, precision = xyz_from_nodes(node_string)
+                outrow[colindex] = linestring
+                outrow.append(elevation)
+                outrow.append(precision)
                 writer.writerow(outrow)
+                #except:
+                #print('Cannot parse this line')
         print('created output file at: \n{}\n'.format(of))
         
 def WKT_linestring_from_nodes(node_string):
@@ -58,18 +75,39 @@ def WKT_linestring_from_nodes(node_string):
     if nodes:
         WKT_type = "LINESTRING" if len(nodes) > 1 else "POINT"
         coord_pair_list = []
+        elevation = []
+        precision = []
         for node in nodes:
             coords = node.strip().split()
             if(len(coords) >=2):   # can be >2 incl elev & precision values
                 # Reverse coords; Lon first, then Lat (as per WKT spec)
                 coord_pair = '{} {}'.format(coords[1], coords[0])
                 coord_pair_list.append(coord_pair)
+                elevation.append(coords[2])
+                precision.append(coords[3])
         line_coord_string = ', '.join(coord_pair_list)
         linestring = '{}({})'.format(WKT_type, line_coord_string)
-        return linestring
+        return linestring, elevation, precision
     else:
         return None
-    
+
+def xyz_from_nodes(node_string):
+    nodes = node_string.split(';')
+    if nodes:
+        lon = []
+        lat = []
+        elev = []
+        precision = []
+	for node in nodes:
+        coords = node.strip().split()
+        lon.append(coords[1])
+        lat.append(coords[0])
+        elev.append(coords[2])
+        precision.append(coords[3])
+    return lon, lat, elev, precision
+
+
+	       
 if __name__ == "__main__":
 
     arguments = []
