@@ -32,7 +32,7 @@ def main(infile, column = None, delimiter = ';',
     with open(infile) as line_data:
         reader = csv.reader(line_data, delimiter = ';')
         data = list(reader)
-        of = output if output else '{}_{}.csv'.format(infile, '_points')
+        of = output if output else '{}_{}.csv'.format(infile, '_3D_points')
         with open(of, 'w') as outfile:
             writer = csv.writer(outfile, delimiter = ';')
             header = data.pop(0)
