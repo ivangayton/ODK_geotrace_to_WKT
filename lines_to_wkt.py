@@ -32,65 +32,48 @@ def main(infile, column = None, delimiter = ';',
     # Avoid choking the CSV library with a long linestring
     csv.field_size_limit(100000000)
 
-    print(delimiter)
 
     with open(infile) as line_data:
-        reader = csv.reader(line_data, delimiter = ';')
+        reader = csv.reader(line_data, delimiter = ',')
         data = list(reader)
         of = output if output else '{}_{}.csv'.format(infile, '_results')
         with open(of, 'w') as outfile:
             writer = csv.writer(outfile, delimiter = delimiter)
             header = data.pop(0)
-            #add the elevation and precision to header
-            header += ['elevation', 'precision']
-            print(header)
-            print(len(header))
             colindex = int(column) - 1 if column else header.index(column_name)
-            writer.writerow(header)
+            newheader = header
+            newheader.append('WKT')
+            writer.writerow(newheader)
 
             for row in data:
-                print(len(row))
-                #try:
-                #print(row)
-                #import pdb;pdb.set_trace()
-                node_string = ''.join(row[colindex])
+                node_string = row[colindex]
+                #print(f'\nColumn {column} contains a {type(node_string)}'
+                #      f'containing {node_string}\n')
                 outrow = row
-                # linestring, elevation, precision = WKT_linestring_from_nodes(node_string)
-                lon, lat, elev, precision = xyz_from_nodes(node_string)
-                outrow[colindex] = linestring
-                outrow.append(elevation)
-                outrow.append(precision)
+                wktstring = WKT_from_nodes(node_string)
+                outrow.append(wktstring)
                 writer.writerow(outrow)
-                #except:
-                #print('Cannot parse this line')
         print('created output file at: \n{}\n'.format(of))
         
-def WKT_linestring_from_nodes(node_string):
+def WKT_from_nodes(node_string):
     """Takes a string of arbitrarily long strings separated by semicolons 
     where the first two items in the string are expected to be lat and long.
     Returns a string containing those coordinates as a Well-Known Text
     linestring (with long first and lat second, therefore x,y).
     """
     nodes = node_string.split(';')
-    if nodes:
-        WKT_type = "LINESTRING" if len(nodes) > 1 else "POINT"
-        coord_pair_list = []
-        elevation = []
-        precision = []
-        for node in nodes:
-            coords = node.strip().split()
-            if(len(coords) >=2):   # can be >2 incl elev & precision values
-                # Reverse coords; Lon first, then Lat (as per WKT spec)
-                coord_pair = '{} {}'.format(coords[1], coords[0])
-                coord_pair_list.append(coord_pair)
-                elevation.append(coords[2])
-                precision.append(coords[3])
-        line_coord_string = ', '.join(coord_pair_list)
-        linestring = '{}({})'.format(WKT_type, line_coord_string)
-        return linestring, elevation, precision
-    else:
-        return None
-
+    WKT_type = "POLYGON" if len(nodes) > 1 else "POINT"
+    #print(f'\nnodes: {nodes}')
+    firstnode = nodes.pop(0).strip().split()
+    #print(f'\nfirst node is a {type(firstnode)}: {firstnode}')
+    nodestring = f'POLYGON(({firstnode[1]} {firstnode[0]}'
+    #print(f'Nodestring so far is: {nodestring}')
+    for node in nodes:
+        coords = node.strip().split()
+        nodestring += f',{coords[1]} {coords[0]}'
+    nodestring += '))'
+    return nodestring
+    
 def xyz_from_nodes(node_string):
     nodes = node_string.split(';')
     if nodes:
@@ -98,12 +81,12 @@ def xyz_from_nodes(node_string):
         lat = []
         elev = []
         precision = []
-	for node in nodes:
-        coords = node.strip().split()
-        lon.append(coords[1])
-        lat.append(coords[0])
-        elev.append(coords[2])
-        precision.append(coords[3])
+        for node in nodes:
+            coords = node.strip().split()
+            lon.append(coords[1])
+            lat.append(coords[0])
+            elev.append(coords[2])
+            precision.append(coords[3])
     return lon, lat, elev, precision
 
 
