@@ -24,8 +24,7 @@ import sys
 import csv
 import argparse
 
-def main(infile, column = None, delim = ',',
-         column_name = 'geotrace', output = None):
+def main(infile, column, column_name, delim, output):
     """
     Args:
         infile: filepath, a CSV from an ODK submission
@@ -38,15 +37,15 @@ def main(infile, column = None, delim = ',',
         Side effect: Writes a CSV with additional columns of WKT
     """
 
-    # Avoid choking the CSV library with a long linestring
+    # Avoid choking the Python CSV library with a long linestring
     csv.field_size_limit(100000000)
 
     with open(infile) as line_data:
         reader = csv.reader(line_data, delimiter = delim)
         data = list(reader)
-        of = output if output else f'{infile}_{results}.csv'
+        of = output if output else f'{infile}_results.csv'
         with open(of, 'w') as outfile:
-            writer = csv.writer(outfile, delimiter = delimiter)
+            writer = csv.writer(outfile, delimiter = delim)
             header = data.pop(0)
             colindex = int(column) - 1 if column else header.index(column_name)
             
@@ -57,7 +56,7 @@ def main(infile, column = None, delim = ',',
             for row in data:
                 node_string = row[colindex]
                 outrow = row
-                wktstring = WKT_from_nodes(node_string)
+                wktstring = wkt_from_jrstring(node_string)
                 outrow.append(wktstring)
                 writer.writerow(outrow)
         print('created output file at: \n{}\n'.format(of))
@@ -73,7 +72,13 @@ def wkt_from_jrstring(jrstring):
         (with lon first and lat second, therefore x,y).
     """ 
     nodes = jrstring.split(';')
-    WKT_type = "POINT" if len(nodes) < 1 else "POLYGON" #FIXME ADD LINES
+    WKT_type = ''
+    if len(nodes) < 1:
+        WKT_type = 'POINT'
+    else:
+        if nodes[0] == nodes[-1]:
+            WKT_type = "POLYGON"
+        else: WKT_type = "LINESTRING"
     #print(f'\nnodes: {nodes}')
     firstnode = nodes.pop(0).strip().split()
     #print(f'\nfirst node is a {type(firstnode)}: {firstnode}')
@@ -84,24 +89,7 @@ def wkt_from_jrstring(jrstring):
         nodestring += f',{coords[1]} {coords[0]}'
     nodestring += '))'
     return nodestring
-    
-def xyz_from_nodes(node_string):
-    nodes = node_string.split(';')
-    if nodes:
-        lon = []
-        lat = []
-        elev = []
-        precision = []
-        for node in nodes:
-            coords = node.strip().split()
-            lon.append(coords[1])
-            lat.append(coords[0])
-            elev.append(coords[2])
-            precision.append(coords[3])
-    return lon, lat, elev, precision
 
-
-	       
 if __name__ == "__main__":
 
     arguments = []
@@ -110,13 +98,12 @@ if __name__ == "__main__":
     p.add_argument('infile', help = "Input CSV file")
     p.add_argument('-c', '--column', help =
                    'Column containing the linestrings to be converted to WKT')
-    p.add_argument('-cn', '--column_name', default = 'drain_line', help =
+    p.add_argument('-cn', '--column_name', default = 'geotrace', help =
                    'The header of the column containing the linestrings'
                    ' to be converted to WKT')
     p.add_argument('-d', '--delimiter', default = ',', help =
                    'Token delimiting one value from the next, usually , or ;')
     p.add_argument('-o', '--output', help = 'Output file path')
-    args = p.parse_args()
+    a = p.parse_args()
 
-    main(args.infile, args.column, args.delimiter,
-         args.column_name, args.output)
+    main(a.infile, a.column, a.column_name, a.delimiter, a.output)
