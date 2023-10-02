@@ -1,68 +1,79 @@
 #!/bin/python3
 """
-Takes a CSV file containing line strings from an OpenDataKit Geotrace, which
-consist of a series of text coordinates, and returns a similar CSV file with 
-properly formatted Well-Known Text (WKT) linestrings (and points).
+Converts OpenDataKit (ODK) JavaRosa geometry in CSV to Well-Known Text (WKT).
 
-This script expects the default GeoTrace format from an ODK CSV export from
-Kobo Toolbox, which consists of a series of node coordinates separated by 
-semicolons. Each node seems to consist of a latitude, longitude, and two zeros, 
-internally separated by spaces. The WKT format specifies the type 
-(LINESTRING or POINT) followed by long, then lat separated by spaces, 
-then a comma separating nodes.
+Takes a CSV file containing line strings from an ODK submission, and 
+returns a similar CSV file with properly formatted Well-Known Text (WKT) 
+polygons, lines, and points.
 
 The output file should be identical to the input, with the exception
 of having converted the GeoTrace coordinates to valid WKT lines.
 
-In a future version I may allow additional column number arguments to convert 
-multiple traces in the same file (in case someone collects multiple lines in 
-the same survey).
+Arguments
+
+Typical usage example:
+           
+    ./odk_subs_to_wkt.py /path/to/infile -c 9
+
+    ./odk_subs_to_wkt.py /path/to/infile -cn i -d ';'
 """
-__version__ = '2019-04-29'
+__version__ = '2023-09-30'
 
 import os
 import sys
 import csv
 import argparse
 
-def main(infile, column = None, delimiter = ';',
-         column_name = 'drain_line', output = None):
-    """Iterates through a CSV and writes a CSV with converted linestrings."""
+def main(infile, column = None, delim = ',',
+         column_name = 'geotrace', output = None):
+    """
+    Args:
+        infile: filepath, a CSV from an ODK submission
+        column: int, one-based column containing the 
+        delim: str, CSV delimiter
+        column_name: str, spreadsheet-style column name ex "AC"
+        output: filepath, output CSV to write (if None autogenerates)
+    Returns:
+        None
+        Side effect: Writes a CSV with additional columns of WKT
+    """
 
     # Avoid choking the CSV library with a long linestring
     csv.field_size_limit(100000000)
 
-
     with open(infile) as line_data:
-        reader = csv.reader(line_data, delimiter = ',')
+        reader = csv.reader(line_data, delimiter = delim)
         data = list(reader)
-        of = output if output else '{}_{}.csv'.format(infile, '_results')
+        of = output if output else f'{infile}_{results}.csv'
         with open(of, 'w') as outfile:
             writer = csv.writer(outfile, delimiter = delimiter)
             header = data.pop(0)
             colindex = int(column) - 1 if column else header.index(column_name)
+            
             newheader = header
             newheader.append('WKT')
             writer.writerow(newheader)
 
             for row in data:
                 node_string = row[colindex]
-                #print(f'\nColumn {column} contains a {type(node_string)}'
-                #      f'containing {node_string}\n')
                 outrow = row
                 wktstring = WKT_from_nodes(node_string)
                 outrow.append(wktstring)
                 writer.writerow(outrow)
         print('created output file at: \n{}\n'.format(of))
         
-def WKT_from_nodes(node_string):
-    """Takes a string of arbitrarily long strings separated by semicolons 
-    where the first two items in the string are expected to be lat and long.
-    Returns a string containing those coordinates as a Well-Known Text
-    linestring (with long first and lat second, therefore x,y).
+def wkt_from_jrstring(jrstring):
     """
-    nodes = node_string.split(';')
-    WKT_type = "POLYGON" if len(nodes) > 1 else "POINT"
+    Args:
+        str: arbitrarily long strings separated by semicolons 
+        where the first two items in the string are expected 
+        to be lat and lon (JavaRosa)
+    Returns:
+        str: those coordinates as a Well-Known Text
+        (with lon first and lat second, therefore x,y).
+    """ 
+    nodes = jrstring.split(';')
+    WKT_type = "POINT" if len(nodes) < 1 else "POLYGON" #FIXME ADD LINES
     #print(f'\nnodes: {nodes}')
     firstnode = nodes.pop(0).strip().split()
     #print(f'\nfirst node is a {type(firstnode)}: {firstnode}')
